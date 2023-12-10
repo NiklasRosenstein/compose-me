@@ -1,3 +1,3 @@
-bind: http://localhost:8000
+bindUrl: http://localhost:8000
 image: nginx:alpine
 domain: localhost

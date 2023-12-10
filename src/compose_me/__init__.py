@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -17,14 +18,14 @@ filter: _FilterFunction = nr.proxy.proxy()
 
 class Chart:
     """
-    Represents a Compose-Me chart. A chart is a directory containing a ``docker-compose.template.yaml`` file and a
-    ``values.yaml`` file. Optionally, it can also contain a ``compose-me.py`` file that can be used to define custom
+    Represents a compose-me chart. A chart is a directory containing a ``docker-compose.template.yaml`` file and a
+    ``values.yaml`` file. Optionally, it can also contain a ``plugin.py`` file that can be used to define custom
     filters and computed values.
     """
 
     COMPOSE_TEMPLATE_FILE = "docker-compose.template.yaml"
     VALUES_FILE = "values.yaml"
-    PLUGIN_FILE = "compose-me.py"
+    PLUGIN_FILE = "plugin.py"
     COMPOSE_ME_CONFIG_KEY = "x-compose-me"
 
     def __init__(self, directory: Path) -> None:
@@ -41,7 +42,7 @@ class Chart:
 
             def _filter() -> _FilterDecorator:
                 def decorator(_func: _FilterArg) -> _FilterArg:
-                    logger.debug("Registering filter %s from %s", _func.__name__, plugin_file)
+                    logger.debug("Registering filter %s from %s", _func.__name__, pretty_path(plugin_file))
                     env.filters[_func.__name__] = _func
                     return _func
 
@@ -49,16 +50,16 @@ class Chart:
 
             nr.proxy.set_value(filter, _filter)
 
-            logger.info("Loading plugin %s", plugin_file)
+            logger.info("Loading plugin %s", pretty_path(plugin_file))
             scope: dict[str, Any] = {"__file__": str(plugin_file), "__name__": plugin_file.name}
-            exec(plugin_file.read_text(), scope)
+            exec(compile(plugin_file.read_text(), plugin_file, "exec"), scope)
 
             if "get_computed_values" in scope:
-                logger.debug("Getting computed values from %s", plugin_file)
+                logger.debug("Getting computed values from %s", pretty_path(plugin_file))
                 computed_values = scope["get_computed_values"](values)
                 if not isinstance(computed_values, dict):
                     raise TypeError(
-                        f'The return value of get_computed_values() in "{plugin_file}" must be a dict.'
+                        f'The return value of get_computed_values() in "{pretty_path(plugin_file)}" must be a dict.'
                         f"Got {type(computed_values).__name__} instead."
                     )
 
@@ -73,19 +74,19 @@ class Chart:
         directory before and are not generated anymore (this is stored in the #FILELIST_FILE).
         """
 
-        logger.info("Rendering chart %s to %s", self.directory, output_directory)
+        logger.info("Rendering chart %s to %s", pretty_path(self.directory), pretty_path(output_directory))
 
         old_filelist = Project(output_directory).get_filelist()
         new_filelist: list[str] = []
 
         # Render the docker-compse file.
         compose_file = output_directory / Project.COMPOSE_FILE
-        logger.info("Rendering %s", compose_file)
+        logger.info("Rendering %s", pretty_path(compose_file))
         compose_file.write_text(env.get_template(self.COMPOSE_TEMPLATE_FILE).render())
         new_filelist.append(Project.COMPOSE_FILE)
 
         # Load the compose file to get the list of auxiliary files.
-        logger.info("Loading %s", compose_file)
+        logger.info("Loading %s", pretty_path(compose_file))
         compose_me_config = yaml.safe_load(compose_file.read_text()).get(self.COMPOSE_ME_CONFIG_KEY, {})
         auxiliary_files: list[str] = compose_me_config.get("templates", [])
 
@@ -94,13 +95,13 @@ class Chart:
             # TODO: Prevent referencing files outside of the chart directory.
             dest_path = (output_directory / filename).resolve()
             filename = str(dest_path.relative_to(output_directory))
-            logger.info("Rendering %s", dest_path)
+            logger.info("Rendering %s", pretty_path(dest_path))
             dest_path.write_text(env.get_template(filename).render())
             new_filelist.append(filename)
 
         # Remove old files that are not generated anymore.
         for filename in set(old_filelist) - set(new_filelist):
-            logger.info("Removing no longer generated file %s", filename)
+            logger.info("Removing no longer generated file %s", pretty_path(filename))
             (output_directory / filename).unlink()
 
         # Write the new filelist.
@@ -109,14 +110,14 @@ class Chart:
 
 class Project:
     """
-    Represents a Compose-Me managed Docker-Compose project. A project is a directory containing a ``compose-me.yaml``
+    Represents a compose-me managed Docker-Compose project. A project is a directory containing a ``values.yaml`` file
     that contains the reference to the Chart being rendered and overrides for the values. Once the chart is rendered,
-    the ``docker-compose.yaml`` file is generated along with any auxiliary files and the ``compose-me.filelist.txt``
-    file is updated to keep track of the generated files.
+    the ``docker-compose.yaml`` file is generated along with any auxiliary files and the ``.filelist.txt`` file is
+    updated to keep track of the generated files.
     """
 
-    CONFIG_FILE = "compose-me.yaml"
-    FILELIST_FILE = "compose-me.filelist.txt"
+    VALUES_FILE = "values.yaml"
+    FILELIST_FILE = ".filelist.txt"
     COMPOSE_FILE = "docker-compose.yaml"
     CHART_REFERENCE_KEY = "chart"
 
@@ -125,18 +126,18 @@ class Project:
 
     def get_filelist(self) -> list[str]:
         if (filelist_file := self.directory / self.FILELIST_FILE).is_file():
-            logger.info("Loading filelist from %s", filelist_file)
+            logger.info("Loading filelist from %s", pretty_path(filelist_file))
             return filelist_file.read_text().splitlines()
         else:
             return []
 
     def set_filelist(self, filelist: list[str]) -> None:
         filelist_file = self.directory / self.FILELIST_FILE
-        logger.info("Writing filelist to %s", filelist_file)
+        logger.info("Writing filelist to %s", pretty_path(filelist_file))
         filelist_file.write_text("\n".join(filelist) + "\n")
 
     def get_values(self) -> dict[str, Any]:
-        return yaml.safe_load((self.directory / self.CONFIG_FILE).read_text())  # type: ignore[no-any-return]
+        return yaml.safe_load((self.directory / self.VALUES_FILE).read_text())  # type: ignore[no-any-return]
 
     def get_chart_reference(self) -> str:
         return self.get_values()[self.CHART_REFERENCE_KEY]  # type: ignore[no-any-return]
@@ -155,3 +156,16 @@ def merge_values(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
         else:
             result[key] = value
     return result
+
+
+cwd = Path.cwd()
+
+
+def pretty_path(path: Path) -> Path:
+    try:
+        new_path = os.path.relpath(path.absolute(), cwd)
+        if new_path.startswith(os.sep.join([os.pardir]*2)):
+            return path
+    except ValueError:
+        return path
+    return Path(new_path)

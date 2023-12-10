@@ -20,7 +20,7 @@ def _main(verbose: bool = Option(False, "-v"), change_dir: Optional[Path] = Opti
 
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
-        format="[%(asctime)s %(levelname)s %(name)s]: %(message)s" if verbose else "%(message)s",
+        format="[%(asctime)s %(levelname)s %(name)s]: %(message)s" if verbose else "[%(levelname)s] %(message)s",
     )
 
     if change_dir:
