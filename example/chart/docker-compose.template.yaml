@@ -1,0 +1,12 @@
+version: '3.4'
+services:
+  web:
+    image: "{{Values.image}}"
+    ports:
+      - "{{Computed.bind.hostname}}:{{Computed.bind.port}}:{{'80' if Computed.bind.scheme == 'http' else '443'}}"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+x-compose-me:
+  templates:
+    - ./nginx.conf
