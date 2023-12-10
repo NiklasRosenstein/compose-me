@@ -22,3 +22,5 @@ a little bit different from Helm charts.
 Install compose-me from PyPI:
 
     $ pipx install compose-me
+
+Compose-me requires Python 3.10 or newer.

@@ -14,3 +14,5 @@ project that can be configured using a small subset of well-defined values.
 Install compose-me from PyPI:
 
     $ pipx install compose-me
+
+Compose-me requires Python 3.10 or newer.

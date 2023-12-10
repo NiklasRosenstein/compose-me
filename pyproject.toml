@@ -14,7 +14,7 @@ dependencies = [
     "flake8>=6.1.0",
     "nr-proxy>=1.1.1",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
@@ -42,6 +42,7 @@ lint = "bash -xc 'mypy src && flake8 src --max-line-length 120 --ignore=W503,W50
 fmt = "bash -xc 'black src && isort src && (mksync -i README.md || true)'"
 test = "pytest src -vv"
 docs = "bash -c 'cd docs && mkdocs serve'"
+"docs:build" = "bash -c 'cd docs && mkdocs build'"
 
 # Linter/Formatter configuration
 # ------------------------------

@@ -1,0 +1,37 @@
+# Github actions workflow to test Python project and build mkdocs documentation
+
+name: Python package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install PDM
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pdm
+    - name: Lint
+      run: pdm run lint
+    - name: Test with pytest
+      run: pdm run test
+    - name: Build documentation
+      run: pdm run docs:build
+    - name: Deploy documentation
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/site
