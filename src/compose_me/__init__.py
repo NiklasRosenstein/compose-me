@@ -161,11 +161,11 @@ def merge_values(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
 cwd = Path.cwd()
 
 
-def pretty_path(path: Path) -> Path:
+def pretty_path(path: Path | str) -> Path:
     try:
-        new_path = os.path.relpath(path.absolute(), cwd)
-        if new_path.startswith(os.sep.join([os.pardir]*2)):
-            return path
+        new_path = os.path.relpath(os.path.abspath(path), cwd)
+        if not new_path.startswith(os.sep.join([os.pardir] * 2)):
+            path = new_path
     except ValueError:
-        return path
-    return Path(new_path)
+        pass
+    return Path(path)
