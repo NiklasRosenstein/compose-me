@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Plugin API - compose-me</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Plugin API";
+        var mkdocs_page_input_path = "plugin_api.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> compose-me
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../charts/">Charts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../projects/">Projects</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Plugin API</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#registering-extensions">Registering extensions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#class-compose_mefilter">class compose_me.filter</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#class-compose_meglobal_">class compose_me.global_</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#computing-values">Computing values</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#func-get_computed_values">func get_computed_values</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">compose-me</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Plugin API</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="plugin-api">Plugin API</h1>
+<p>A <code>plugin.py</code> script in a compose-me chart can be used to register custom Jinja filters and globals, as well as to
+derive computed values from the project's values.</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-py"># plugin.py
+from compose_me import filter
+from typing import Any
+from urllib.parse import urlparse
+
+
+@filter
+def addOne(value: int) -&gt; int:
+    return value + 1
+
+
+def get_computed_values(values: dict[str, Any]) -&gt; dict[str, Any]:
+    return {
+        &quot;repository&quot;: values[&quot;image&quot;].split(&quot;:&quot;)[0],
+        &quot;tag&quot;: values[&quot;image&quot;].split(&quot;:&quot;)[0],
+    }
+</code></pre>
+<pre><code class="language-yaml"># docker-compose.template.yaml
+services:
+  web:
+    image: &quot;{{Computed.repository}}:{{Computed.tag}}&quot;
+    ports:
+      - &quot;{{Values.port|addOne}}:80&quot;
+</code></pre>
+<h2 id="registering-extensions">Registering extensions</h2>
+<p>Custom filters and global values can be registered to the <a href="https://jinja.palletsprojects.com/">Jinja</a> template engine using the respective API
+provided by the <code>compose_me</code> module.</p>
+<h3 id="class-compose_mefilter">class <code>compose_me.filter</code></h3>
+<p>Decorator for functions that are to be registered as filters to the Jinja environment. The decorated function must
+exist in the global scope of the plugin scope to be registered.</p>
+<pre><code class="language-py">from compose_me import filter
+
+@filter
+def addOne(value: int) -&gt; int:
+    return value + 1
+</code></pre>
+<h3 id="class-compose_meglobal_">class <code>compose_me.global_</code></h3>
+<p>Decorator for functions or values that are to be registered as global values to the Jinja environment. The decorated
+value must exist in the global scope of the plugin scope to be registered.</p>
+<pre><code class="language-py">from compose_me import global_
+from typing import NoReturn
+
+@global_
+def throw() -&gt; NoReturn:
+    raise Exception(&quot;no way this failed&quot;)
+
+THE_UNIVERSE = global_(42)
+</code></pre>
+<h2 id="computing-values">Computing values</h2>
+<h3 id="func-get_computed_values">func <code>get_computed_values</code></h3>
+<pre><code class="language-py">def get_computed_values(values: dict[str, Any]) -&gt; dict[str, Any]: ...
+</code></pre>
+<p>If this function is defined in a compose-me chart's <code>plugin.py</code>, it will be called with the <code>Values</code> object and is
+expected to return the <code>Computed</code> object.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../projects/" class="btn btn-neutral float-left" title="Projects"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../projects/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

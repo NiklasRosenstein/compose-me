@@ -31,16 +31,12 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href=".." class="icon icon-home"> compose-me
-        </a><div role="search">
-  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
-  </form>
-</div>
+        </a>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="..">Welcome to the compose-me documentation!</a>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
                 </li>
               </ul>
               <ul class="current">
@@ -57,6 +53,10 @@
               </ul>
               <ul>
                 <li class="toctree-l1"><a class="reference internal" href="../projects/">Projects</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../plugin_api/">Plugin API</a>
                 </li>
               </ul>
       </div>
@@ -118,36 +118,12 @@ x-compose-me:
 <p>A chart may contain a <code>plugin.py</code> script in the root of your project. This script is executed before rendering the
 templates and can be used to define custom Jinja filters, as well as generating computed values that can be referenced
 in the templates using the <code>Computed</code> object.</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-py"># plugin.py
-from compose_me import filter
-from typing import Any
-from urllib.parse import urlparse
-
-
-@filter
-def add_one(value: int) -&gt; int:
-    return value + 1
-
-
-def get_computed_values(values: dict[str, Any]) -&gt; dict[str, Any]:
-    return {
-        &quot;repository&quot;: values[&quot;image&quot;].split(&quot;:&quot;)[0],
-        &quot;tag&quot;: values[&quot;image&quot;].split(&quot;:&quot;)[0],
-    }
-</code></pre>
-<pre><code class="language-yaml"># docker-compose.template.yaml
-services:
-  web:
-    image: &quot;{{Computed.repository}}:{{Computed.tag}}&quot;
-    ports:
-      - &quot;{{Values.port|add_one}}:80&quot;
-</code></pre>
+<p>Learn more about plugins in <a href="../plugin_api/">Plugin API</a>.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href=".." class="btn btn-neutral float-left" title="Welcome to the compose-me documentation!"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../projects/" class="btn btn-neutral float-right" title="Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -182,7 +158,6 @@ services:
     <script>var base_url = "..";</script>
     <script src="../js/theme_extra.js"></script>
     <script src="../js/theme.js"></script>
-      <script src="../search/main.js"></script>
     <script>
         jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
