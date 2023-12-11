@@ -1,9 +1,10 @@
-version: '3.4'
+version: {{DOCKER_COMPOSE_VERSION|toYaml}}
 services:
   web:
     image: "{{Values.image}}"
     ports:
       - "{{Computed.bindUrl.hostname}}:{{Computed.bindUrl.port}}:{{'80' if Computed.bindUrl.scheme == 'http' else '443'}}"
+      - "{{Computed.bindUrl.hostname}}:{{Computed.bindUrl.port|addOne}}:81"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
 

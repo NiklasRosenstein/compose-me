@@ -52,32 +52,4 @@ A chart may contain a `plugin.py` script in the root of your project. This scrip
 templates and can be used to define custom Jinja filters, as well as generating computed values that can be referenced
 in the templates using the `Computed` object.
 
-__Example:__
-
-```py
-# plugin.py
-from compose_me import filter
-from typing import Any
-from urllib.parse import urlparse
-
-
-@filter
-def add_one(value: int) -> int:
-    return value + 1
-
-
-def get_computed_values(values: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "repository": values["image"].split(":")[0],
-        "tag": values["image"].split(":")[0],
-    }
-```
-
-```yaml
-# docker-compose.template.yaml
-services:
-  web:
-    image: "{{Computed.repository}}:{{Computed.tag}}"
-    ports:
-      - "{{Values.port|add_one}}:80"
-```
+Learn more about plugins in [Plugin API](./plugin_api.md).

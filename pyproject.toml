@@ -12,7 +12,6 @@ dependencies = [
     "mypy>=1.7.1",
     "black>=23.11.0",
     "flake8>=6.1.0",
-    "nr-proxy>=1.1.1",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -35,12 +34,13 @@ dev = [
     "types-pyyaml>=6.0.12.12",
     "mksync>=0.1.4",
     "mkdocs>=1.5.3",
+    "mkdocs-nav-weight>=0.2.0",
 ]
 
 [tool.pdm.scripts]
 lint = "bash -xc 'mypy src && flake8 src --max-line-length 120 --ignore=W503,W504,E203 && black src --check && isort src --check-only'"
 fmt = "bash -xc 'black src && isort src && (mksync -i README.md || true)'"
-test = "true" #pytest src -vv"
+test = "pytest src test -vv"
 docs = "bash -c 'cd docs && mkdocs serve'"
 "docs:build" = "bash -c 'cd docs && mkdocs build'"
 

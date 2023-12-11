@@ -1,19 +1,56 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import jinja2
-import nr.proxy
 import yaml
-
-from .types import _FilterArg, _FilterDecorator, _FilterFunction
 
 logger = logging.getLogger(__name__)
 
-#: Decorator to register a filter function. This is a proxy so that the filter can be imported from the plugin
-#: file using ``from compose_me import filter``.
-filter: _FilterFunction = nr.proxy.proxy()
+
+class filter:
+    """
+    Decorator for a function to be registered as a Jinja filter.
+    """
+
+    Signature = Callable[..., Any]
+
+    def __init__(self, func: Signature, name: str | None = None) -> None:
+        self.func = func
+        self.name = name or func.__name__
+
+
+class global_:
+    """
+    Decorator for a function or value to be registered as a global value in the context.
+    """
+
+    def __init__(self, value: Any, name: str | None = None) -> None:
+        if name is None:
+            if not hasattr(value, "__name__"):
+                raise ValueError('"name" argument must be specified if "value" has no "__name__" attribute')
+            name = value.__name__
+        self.value = value
+        self.name = name
+
+
+def register_env_extensions(env: jinja2.Environment, scope: dict[str, Any]) -> None:
+    """
+    Registers all Jinja environment extensions found in the *scope* mapping.
+
+    Supported extension types are #filter and #global_.
+    """
+
+    for value in scope.values():
+        match value:
+            case filter():
+                env.filters[value.name] = value.func
+            case global_():
+                env.globals[value.name] = value.value
+
+
+from . import defaults  # noqa: E402
 
 
 class Chart:
@@ -36,23 +73,14 @@ class Chart:
 
     def get_jinja_environment(self, values: dict[str, Any]) -> jinja2.Environment:
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(self.directory))
+        register_env_extensions(env, vars(defaults))
         computed_values = {}
 
         if (plugin_file := self.directory / self.PLUGIN_FILE).is_file():
-
-            def _filter() -> _FilterDecorator:
-                def decorator(_func: _FilterArg) -> _FilterArg:
-                    logger.debug("Registering filter %s from %s", _func.__name__, pretty_path(plugin_file))
-                    env.filters[_func.__name__] = _func
-                    return _func
-
-                return decorator
-
-            nr.proxy.set_value(filter, _filter)
-
             logger.info("Loading plugin %s", pretty_path(plugin_file))
             scope: dict[str, Any] = {"__file__": str(plugin_file), "__name__": plugin_file.name}
             exec(compile(plugin_file.read_text(), plugin_file, "exec"), scope)
+            register_env_extensions(env, scope)
 
             if "get_computed_values" in scope:
                 logger.debug("Getting computed values from %s", pretty_path(plugin_file))
@@ -62,7 +90,6 @@ class Chart:
                         f'The return value of get_computed_values() in "{pretty_path(plugin_file)}" must be a dict.'
                         f"Got {type(computed_values).__name__} instead."
                     )
-
         env.globals["Values"] = values
         env.globals["Computed"] = computed_values
 

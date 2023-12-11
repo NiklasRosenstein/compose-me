@@ -1,4 +1,8 @@
-# Welcome to the compose-me documentation!
+---
+title: Home
+---
+
+n# Welcome to the compose-me documentation!
 
   [Helm]: https://helm.sh/
   [Jinja]: https://jinja.palletsprojects.com/

@@ -35,6 +35,7 @@ def _main(verbose: bool = Option(False, "-v"), change_dir: Optional[Path] = Opti
         chart.render(chart.get_jinja_environment(values), Path.cwd())
     except FileNotFoundError as e:
         logging.error("Could not find file %s", e.filename, exc_info=verbose)
+        exit(1)
 
 
 if __name__ == "__main__":

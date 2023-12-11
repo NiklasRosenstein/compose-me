@@ -1,2 +1,4 @@
 site_name: compose-me
 theme: readthedocs
+plugins:
+  - mkdocs-nav-weight
